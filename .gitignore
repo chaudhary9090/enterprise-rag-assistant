@@ -6,3 +6,6 @@ __pycache__/
 *.db
 node_modules/
 .pytest_cache/
+
+login.json
+workspace.json
