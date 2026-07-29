@@ -39,9 +39,19 @@ async def upload_and_process(db: AsyncSession, workspace_id: uuid.UUID, uploaded
         await document_repository.update_status(db, document.id, "processing")
         text = extract_text(saved_path, file_ext)
         chunks = chunk_text(text)
-        if chunks:
-            qdrant_store.upsert_chunks(str(document.id), str(workspace_id), chunks)
+        if not chunks:
+            # No usable text came out of this file (common with scanned/image-only
+            # PDFs, which have no real text layer for pypdf to read) — mark it
+            # clearly instead of silently claiming success with nothing stored.
+            await document_repository.update_status(db, document.id, "failed_no_text")
+            raise HTTPException(
+                status_code=422,
+                detail="No extractable text found in this file (it may be a scanned image PDF). Try a text-based PDF, DOCX, or TXT file instead.",
+            )
+        qdrant_store.upsert_chunks(str(document.id), str(workspace_id), chunks)
         await document_repository.update_status(db, document.id, "indexed")
+    except HTTPException:
+        raise
     except Exception as e:
         await document_repository.update_status(db, document.id, "failed")
         raise HTTPException(status_code=500, detail=f"Processing failed: {e}")

@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Enterprise RAG Knowledge Assistant</title>
+<style>
+  :root {
+    --paper: #FAF7F0;
+    --ink: #1E2A38;
+    --ink-soft: #4A5A6B;
+    --accent: #2B5C6B;
+    --accent-soft: #E4ECE9;
+    --line: #DCD5C4;
+    --error: #B3432D;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Georgia', 'Times New Roman', serif;
+    min-height: 100vh;
+  }
+  .mono { font-family: 'Consolas', 'Courier New', monospace; }
+
+  header {
+    padding: 28px 32px 20px;
+    border-bottom: 2px solid var(--ink);
+  }
+  header h1 {
+    margin: 0;
+    font-size: 26px;
+    letter-spacing: 0.3px;
+  }
+  header p {
+    margin: 4px 0 0;
+    color: var(--ink-soft);
+    font-size: 14px;
+    font-family: 'Consolas', 'Courier New', monospace;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    min-height: calc(100vh - 90px);
+  }
+  aside {
+    border-right: 1px solid var(--line);
+    padding: 24px;
+  }
+  main {
+    padding: 24px 32px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  section { margin-bottom: 28px; }
+  h2 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--ink-soft);
+    margin: 0 0 12px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 6px;
+  }
+
+  input, button, select {
+    font-family: inherit;
+    font-size: 14px;
+  }
+  input[type=text], input[type=email], input[type=password] {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    background: white;
+    color: var(--ink);
+    margin-bottom: 8px;
+    border-radius: 3px;
+  }
+  input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  button {
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    padding: 9px 16px;
+    border-radius: 3px;
+    cursor: pointer;
+    width: 100%;
+  }
+  button:hover { background: var(--accent); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.secondary {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--line);
+  }
+  button.secondary:hover { background: var(--accent-soft); }
+
+  .workspace-item {
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .workspace-item:hover { background: var(--accent-soft); }
+  .workspace-item.active {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+
+  .doc-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+  }
+  .doc-status {
+    font-family: 'Consolas', monospace;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .doc-status.failed { background: #F3DEDA; color: var(--error); }
+
+  #chat-log {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+    margin-bottom: 12px;
+  }
+  .msg { margin-bottom: 18px; max-width: 640px; }
+  .msg.user { margin-left: auto; text-align: right; }
+  .msg .bubble {
+    display: inline-block;
+    padding: 12px 16px;
+    border-radius: 6px;
+    text-align: left;
+    line-height: 1.5;
+  }
+  .msg.user .bubble { background: var(--ink); color: var(--paper); }
+  .msg.bot .bubble { background: white; border: 1px solid var(--line); }
+  .sources {
+    margin-top: 8px;
+    font-family: 'Consolas', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .source-chip {
+    display: inline-block;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin: 2px 4px 2px 0;
+  }
+
+  .chat-input-row {
+    display: flex;
+    gap: 8px;
+    border-top: 2px solid var(--ink);
+    padding-top: 14px;
+  }
+  .chat-input-row input { margin-bottom: 0; flex: 1; }
+  .chat-input-row button { width: auto; padding: 9px 24px; }
+
+  .empty-state {
+    color: var(--ink-soft);
+    font-family: 'Consolas', monospace;
+    font-size: 14px;
+    padding: 40px 0;
+    text-align: center;
+  }
+  .error-banner {
+    background: #F3DEDA;
+    color: var(--error);
+    padding: 8px 10px;
+    border-radius: 3px;
+    font-size: 13px;
+    margin-bottom: 10px;
+    font-family: 'Consolas', monospace;
+  }
+  .hidden { display: none !important; }
+  .user-badge {
+    font-family: 'Consolas', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Enterprise RAG Knowledge Assistant</h1>
+  <p id="server-status">checking connection to http://127.0.0.1:8000 ...</p>
+</header>
+
+<div class="layout">
+  <aside>
+    <!-- AUTH -->
+    <section id="auth-section">
+      <h2 id="auth-heading">Sign In</h2>
+      <div id="auth-error" class="error-banner hidden"></div>
+      <input type="email" id="auth-email" placeholder="email">
+      <input type="password" id="auth-password" placeholder="password">
+      <input type="text" id="auth-fullname" class="hidden" placeholder="full name (optional)">
+      <button id="auth-submit">Sign In</button>
+      <button class="secondary" id="auth-toggle" style="margin-top:6px">Need an account? Sign up</button>
+    </section>
+
+    <!-- LOGGED IN VIEW -->
+    <section id="user-section" class="hidden">
+      <h2>Account</h2>
+      <p class="user-badge" id="user-info">—</p>
+      <button class="secondary" id="logout-btn">Log out</button>
+    </section>
+
+    <section id="workspace-section" class="hidden">
+      <h2>Workspaces</h2>
+      <div id="workspace-list"></div>
+      <input type="text" id="new-workspace-name" placeholder="new workspace name" style="margin-top:10px">
+      <button id="create-workspace-btn">+ Create Workspace</button>
+    </section>
+
+    <section id="documents-section" class="hidden">
+      <h2>Documents</h2>
+      <div id="document-list" style="margin-bottom:10px"></div>
+      <input type="file" id="file-input" accept=".pdf,.docx,.txt,.md">
+      <button id="upload-btn" style="margin-top:8px">Upload</button>
+    </section>
+  </aside>
+
+  <main id="main-section" class="hidden">
+    <h2 id="chat-workspace-label">Select a workspace</h2>
+    <div id="chat-log">
+      <div class="empty-state">Ask a question about the documents in this workspace.</div>
+    </div>
+    <div class="chat-input-row">
+      <input type="text" id="chat-input" placeholder="Ask a question about your documents...">
+      <button id="chat-send-btn">Ask</button>
+    </div>
+  </main>
+</div>
+
+<script>
+const API = "http://127.0.0.1:8000";
+let token = null;
+let currentUser = null;
+let workspaces = [];
+let activeWorkspaceId = null;
+let isSignup = false;
+
+const $ = (id) => document.getElementById(id);
+
+async function api(path, options = {}) {
+  const headers = options.headers || {};
+  if (token) headers["Authorization"] = "Bearer " + token;
+  const res = await fetch(API + path, { ...options, headers });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ detail: res.statusText }));
+    let message = body.detail || "Request failed";
+    // FastAPI validation errors (422) return `detail` as an array of objects,
+    // not a plain string — turn that into readable text instead of "[object Object]".
+    if (Array.isArray(message)) {
+      message = message.map(err => err.msg || JSON.stringify(err)).join("; ");
+    }
+    throw new Error(message);
+  }
+  return res.json();
+}
+
+async function checkServer() {
+  try {
+    const health = await api("/health");
+    $("server-status").textContent = `connected — LLM provider: ${health.llm_provider}`;
+  } catch (e) {
+    $("server-status").textContent = "⚠ cannot reach server at " + API + " — is uvicorn running?";
+  }
+}
+
+// ---------- AUTH ----------
+$("auth-toggle").onclick = () => {
+  isSignup = !isSignup;
+  $("auth-heading").textContent = isSignup ? "Create Account" : "Sign In";
+  $("auth-submit").textContent = isSignup ? "Sign Up" : "Sign In";
+  $("auth-toggle").textContent = isSignup ? "Already have an account? Sign in" : "Need an account? Sign up";
+  $("auth-fullname").classList.toggle("hidden", !isSignup);
+};
+
+$("auth-submit").onclick = async () => {
+  const email = $("auth-email").value.trim();
+  const password = $("auth-password").value;
+  const full_name = $("auth-fullname").value.trim();
+  $("auth-error").classList.add("hidden");
+
+  try {
+    const path = isSignup ? "/auth/signup" : "/auth/login";
+    const body = isSignup ? { email, password, full_name } : { email, password };
+    const result = await api(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    token = result.access_token;
+    await loadUser();
+  } catch (e) {
+    $("auth-error").textContent = e.message;
+    $("auth-error").classList.remove("hidden");
+  }
+};
+
+$("logout-btn").onclick = () => {
+  token = null; currentUser = null; workspaces = []; activeWorkspaceId = null;
+  $("auth-section").classList.remove("hidden");
+  $("user-section").classList.add("hidden");
+  $("workspace-section").classList.add("hidden");
+  $("documents-section").classList.add("hidden");
+  $("main-section").classList.add("hidden");
+};
+
+async function loadUser() {
+  currentUser = await api("/auth/me");
+  $("user-info").textContent = currentUser.email;
+  $("auth-section").classList.add("hidden");
+  $("user-section").classList.remove("hidden");
+  $("workspace-section").classList.remove("hidden");
+  await loadWorkspaces();
+}
+
+// ---------- WORKSPACES ----------
+async function loadWorkspaces() {
+  workspaces = await api("/workspaces");
+  renderWorkspaces();
+}
+
+function renderWorkspaces() {
+  const list = $("workspace-list");
+  list.innerHTML = "";
+  if (workspaces.length === 0) {
+    list.innerHTML = '<div class="empty-state" style="padding:10px 0">No workspaces yet</div>';
+  }
+  workspaces.forEach((ws) => {
+    const div = document.createElement("div");
+    div.className = "workspace-item" + (ws.id === activeWorkspaceId ? " active" : "");
+    div.textContent = ws.name;
+    div.onclick = () => selectWorkspace(ws.id, ws.name);
+    list.appendChild(div);
+  });
+}
+
+$("create-workspace-btn").onclick = async () => {
+  const name = $("new-workspace-name").value.trim();
+  if (!name) return;
+  const ws = await api("/workspaces", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+  $("new-workspace-name").value = "";
+  await loadWorkspaces();
+  selectWorkspace(ws.id, ws.name);
+};
+
+function selectWorkspace(id, name) {
+  activeWorkspaceId = id;
+  renderWorkspaces();
+  $("documents-section").classList.remove("hidden");
+  $("main-section").classList.remove("hidden");
+  $("chat-workspace-label").textContent = "Chat — " + name;
+  $("chat-log").innerHTML = '<div class="empty-state">Ask a question about the documents in this workspace.</div>';
+  loadDocuments();
+}
+
+// ---------- DOCUMENTS ----------
+async function loadDocuments() {
+  const docs = await api(`/workspaces/${activeWorkspaceId}/documents`);
+  const list = $("document-list");
+  list.innerHTML = "";
+  if (docs.length === 0) {
+    list.innerHTML = '<div class="empty-state" style="padding:6px 0">No documents uploaded</div>';
+  }
+  docs.forEach((d) => {
+    const div = document.createElement("div");
+    div.className = "doc-item";
+    const statusClass = (d.status === "failed" || d.status === "failed_no_text") ? "doc-status failed" : "doc-status";
+    div.innerHTML = `<span>${d.filename}</span><span class="${statusClass}">${d.status}</span>`;
+    list.appendChild(div);
+  });
+}
+
+$("upload-btn").onclick = async () => {
+  const fileInput = $("file-input");
+  if (!fileInput.files.length || !activeWorkspaceId) return;
+  const formData = new FormData();
+  formData.append("file", fileInput.files[0]);
+
+  $("upload-btn").disabled = true;
+  $("upload-btn").textContent = "Uploading & indexing...";
+  try {
+    await api(`/workspaces/${activeWorkspaceId}/documents`, { method: "POST", body: formData });
+    fileInput.value = "";
+    await loadDocuments();
+  } catch (e) {
+    alert("Upload failed: " + e.message);
+  } finally {
+    $("upload-btn").disabled = false;
+    $("upload-btn").textContent = "Upload";
+  }
+};
+
+// ---------- CHAT ----------
+function addMessage(role, text, sources) {
+  const log = $("chat-log");
+  const empty = log.querySelector(".empty-state");
+  if (empty) empty.remove();
+
+  const div = document.createElement("div");
+  div.className = "msg " + role;
+  let html = `<div class="bubble">${text}</div>`;
+  if (sources && sources.length) {
+    html += `<div class="sources">sources: ` +
+      sources.map(s => `<span class="source-chip">doc ${s.document_id.slice(0,8)} · score ${s.relevance_score}</span>`).join("") +
+      `</div>`;
+  }
+  div.innerHTML = html;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+async function sendChat() {
+  const input = $("chat-input");
+  const question = input.value.trim();
+  if (!question || !activeWorkspaceId) return;
+  addMessage("user", question);
+  input.value = "";
+  $("chat-send-btn").disabled = true;
+
+  try {
+    const result = await api(`/workspaces/${activeWorkspaceId}/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question }),
+    });
+    addMessage("bot", result.answer, result.sources);
+  } catch (e) {
+    addMessage("bot", "Error: " + e.message);
+  } finally {
+    $("chat-send-btn").disabled = false;
+  }
+}
+
+$("chat-send-btn").onclick = sendChat;
+$("chat-input").addEventListener("keydown", (e) => { if (e.key === "Enter") sendChat(); });
+
+checkServer();
+</script>
+</body>
+</html>

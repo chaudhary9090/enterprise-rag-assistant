@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from app.core.config import settings
 from app.core.database import engine, Base
@@ -14,6 +15,18 @@ from app.models.workspace import Workspace  # noqa: F401
 from app.models.document import Document  # noqa: F401
 
 app = FastAPI(title=settings.app_name)
+
+# Allows the frontend (a local HTML file, or later a dev server on another
+# port) to call this API. Wide open here since this is local dev only —
+# a real production deployment would restrict this to the actual frontend domain.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(auth_router)
 app.include_router(workspaces_router)
 app.include_router(documents_router)
