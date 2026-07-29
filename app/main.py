@@ -5,6 +5,8 @@ from app.core.database import engine, Base
 from app.llm.factory import get_llm_provider
 from app.api.auth import router as auth_router
 from app.api.workspaces import router as workspaces_router
+from app.api.documents import router as documents_router
+from app.api.chat import router as chat_router
 
 # Importing models so SQLAlchemy knows about these tables before create_all() runs.
 from app.models.user import User  # noqa: F401
@@ -14,6 +16,8 @@ from app.models.document import Document  # noqa: F401
 app = FastAPI(title=settings.app_name)
 app.include_router(auth_router)
 app.include_router(workspaces_router)
+app.include_router(documents_router)
+app.include_router(chat_router)
 
 
 @app.on_event("startup")

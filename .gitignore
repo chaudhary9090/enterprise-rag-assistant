@@ -9,3 +9,8 @@ node_modules/
 
 login.json
 workspace.json
+
+uploaded_files/
+qdrant_data/
+*.txt
+chat.json
