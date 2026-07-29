@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     ollama_base_url: str = "http://localhost:11434"
     groq_api_key: str = ""
+    tavily_api_key: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

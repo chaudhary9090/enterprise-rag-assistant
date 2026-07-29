@@ -417,7 +417,7 @@ $("upload-btn").onclick = async () => {
 };
 
 // ---------- CHAT ----------
-function addMessage(role, text, sources) {
+function addMessage(role, text, sources, webSources) {
   const log = $("chat-log");
   const empty = log.querySelector(".empty-state");
   if (empty) empty.remove();
@@ -426,8 +426,13 @@ function addMessage(role, text, sources) {
   div.className = "msg " + role;
   let html = `<div class="bubble">${text}</div>`;
   if (sources && sources.length) {
-    html += `<div class="sources">sources: ` +
+    html += `<div class="sources">documents: ` +
       sources.map(s => `<span class="source-chip">doc ${s.document_id.slice(0,8)} · score ${s.relevance_score}</span>`).join("") +
+      `</div>`;
+  }
+  if (webSources && webSources.length) {
+    html += `<div class="sources">web: ` +
+      webSources.map(w => `<a class="source-chip" href="${w.url}" target="_blank" style="text-decoration:none">${w.title.slice(0,40)}</a>`).join("") +
       `</div>`;
   }
   div.innerHTML = html;
@@ -449,7 +454,7 @@ async function sendChat() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question }),
     });
-    addMessage("bot", result.answer, result.sources);
+    addMessage("bot", result.answer, result.sources, result.web_sources);
   } catch (e) {
     addMessage("bot", "Error: " + e.message);
   } finally {
